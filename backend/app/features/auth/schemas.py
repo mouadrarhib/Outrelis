@@ -18,13 +18,20 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(LoginRequest):
+    full_name: str = Field(min_length=1, max_length=100)
     password: SecretStr = Field(min_length=15, max_length=128)
+
+    @field_validator("full_name", mode="before")
+    @classmethod
+    def trim_full_name(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
 
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    full_name: str | None
     email: EmailStr
     created_at: datetime
 

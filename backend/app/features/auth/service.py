@@ -33,7 +33,11 @@ def enforce_rate_limit(db: Session, category: str, identity: str, maximum: int) 
 
 
 def register(db: Session, data: RegisterRequest) -> User:
-    user = User(email=str(data.email), password_hash=password_hasher.hash(data.password.get_secret_value()))
+    user = User(
+        full_name=data.full_name,
+        email=str(data.email),
+        password_hash=password_hasher.hash(data.password.get_secret_value()),
+    )
     db.add(user)
     try:
         db.commit()

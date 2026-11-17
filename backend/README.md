@@ -28,14 +28,21 @@ Direct project dependencies are declared in `pyproject.toml`.
 | GET | `/api/v1/auth/me` | Return the authenticated user |
 | POST | `/api/v1/auth/logout` | Revoke the current session (204) |
 
-Registration and login accept JSON:
+Registration accepts JSON:
 
 ```json
 {
+  "full_name": "Mouad Example",
   "email": "owner@example.com",
   "password": "a long private passphrase"
 }
 ```
+
+Login accepts only `email` and `password`. Registration requires `full_name`
+(1–100 characters after trimming surrounding whitespace). Single-word names and
+international characters are supported. Registration, login, and `/me` user
+responses include `full_name`. Accounts created before the name migration keep
+`null` until a future profile update; existing accounts and sessions are preserved.
 
 Emails are trimmed and lowercased; passwords are preserved exactly. New passwords
 must contain 15–128 characters. Passwords use Argon2id hashes, and validation

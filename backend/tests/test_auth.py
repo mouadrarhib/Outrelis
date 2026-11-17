@@ -13,7 +13,7 @@ PREFIX = "/api/v1/auth"
 
 
 def register(client, **overrides):
-    return client.post(f"{PREFIX}/register", json=ACCOUNT | overrides)
+    return client.post(f"{PREFIX}/register", json=ACCOUNT | {"full_name": "Mouad Example"} | overrides)
 
 
 def login(client, **overrides):
@@ -25,11 +25,13 @@ def headers(token):
 
 
 def test_registration_normalizes_email_and_hashes_password(client, db):
-    response = register(client, email=" Owner@Example.COM ")
+    response = register(client, email=" Owner@Example.COM ", full_name="  Mouad Example  ")
     assert response.status_code == 201
     assert response.json()["email"] == ACCOUNT["email"]
-    assert set(response.json()) == {"id", "email", "created_at"}
+    assert response.json()["full_name"] == "Mouad Example"
+    assert set(response.json()) == {"id", "full_name", "email", "created_at"}
     user = db.scalar(select(User))
+    assert user.full_name == "Mouad Example"
     assert user.password_hash.startswith("$argon2id$")
     assert password_hasher.verify(ACCOUNT["password"], user.password_hash)
     assert ACCOUNT["password"] not in response.text
@@ -47,6 +49,10 @@ def test_duplicate_email_cannot_replace_existing_password(client, db):
     {"password": "short"},
     {"password": "x" * 129},
     {"is_active": True},
+    {"full_name": ""},
+    {"full_name": "   "},
+    {"full_name": "x" * 101},
+    {"full_name": None},
 ])
 def test_invalid_registration_does_not_echo_input_or_create_user(client, db, override):
     response = register(client, **override)
@@ -60,6 +66,7 @@ def test_login_me_and_logout_revoke_session(client, db):
     user = register(client).json()
     response = login(client)
     assert response.status_code == 200
+    assert response.json()["user"]["full_name"] == "Mouad Example"
     assert response.headers["cache-control"] == "no-store"
     token = response.json()["access_token"]
     stored = db.scalar(select(AuthSession))
@@ -69,6 +76,22 @@ def test_login_me_and_logout_revoke_session(client, db):
     assert client.get(f"{PREFIX}/me", headers=headers(token)).json() == user
     assert client.post(f"{PREFIX}/logout", headers=headers(token)).status_code == 204
     assert client.get(f"{PREFIX}/me", headers=headers(token)).status_code == 401
+
+
+def test_full_name_required_for_registration_but_not_login(client):
+    assert client.post(f"{PREFIX}/register", json=ACCOUNT).status_code == 422
+    assert register(client, full_name="مُعاذ").status_code == 201
+    assert login(client).json()["user"]["full_name"] == "مُعاذ"
+
+
+def test_existing_account_without_name_can_still_login(client, db):
+    register(client)
+    user = db.scalar(select(User))
+    user.full_name = None
+    db.commit()
+    response = login(client)
+    assert response.status_code == 200
+    assert response.json()["user"]["full_name"] is None
 
 
 def test_wrong_password_and_unknown_account_have_same_error(client):
