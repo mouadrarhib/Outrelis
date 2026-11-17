@@ -26,7 +26,7 @@ Related plans: [V1](product-v1.md), [V2](product-v2.md), and
 | Production database | Supabase PostgreSQL | User-selected |
 | MVP backend | Python + FastAPI | Planned backend direction |
 | Database access/migrations | SQLAlchemy + Alembic | Retain existing tools |
-| Authentication | Supabase Auth for the hosted MVP | Proposed; integration details to confirm |
+| Authentication | FastAPI email/password accounts with PostgreSQL-backed bearer sessions | Local foundation implemented; Gmail OAuth is separate |
 | Background processing | RQ + Redis | Recommended initial queue; not installed |
 | Frontend hosting | Cloudflare Pages | Recommended for the waitlist and static React build |
 | Python hosting | Provider to be selected before hosted beta | Open decision |
@@ -84,7 +84,7 @@ that browser-side validation is the security boundary.
 | Database | Docker PostgreSQL locally; Supabase PostgreSQL hosted | Durable application records |
 | ORM | SQLAlchemy | Models, queries and explicit transactions |
 | Migrations | Alembic | Versioned schema changes |
-| Identity | Supabase Auth, proposed | User authentication; FastAPI verifies identity and workspace access |
+| Identity | FastAPI email/password accounts | Argon2id passwords and revocable sessions; workspace authorization is a later step |
 | Job queue | RQ + Redis, proposed | Dispatch and retry long-running work |
 | Worker | Separate Python process from the same codebase | Searches, crawling, enrichment and audits |
 | Public website research | Existing httpx + BeautifulSoup services | Fetch and extract from public pages |
@@ -109,8 +109,9 @@ not a separate microservice or a second copy of the business logic.
 - PostgreSQL is authoritative for accounts, workspace membership, credit grants,
   reservations, transactions and durable job state. Redis is queue infrastructure,
   not the authority for spendable credits.
-- The backend validates Supabase identity and membership; a workspace ID in a
-  request is not proof of access.
+- The backend validates its own account sessions. Workspace authorization must
+  be added before workspace-scoped features; a client-supplied workspace ID is
+  not proof of access. Supabase is the planned production PostgreSQL host.
 - All credit grants, reservations, charges and privileged data operations go
   through controlled server-side operations. React never decides its own balance.
 - Keep provider credentials and privileged database access out of browser bundles.
@@ -316,7 +317,8 @@ No microservice split is planned.
 ## Open Decisions
 
 - Final public product name and first customer geography.
-- Confirm Supabase Auth and decide login/enrollment flows.
+- Add email verification, password recovery and workspace authorization to the
+  implemented email/password authentication foundation before public launch.
 - Frontend form/query/table/testing utilities, chosen only as needed.
 - Waitlist anti-abuse and confirmation-email requirements.
 - Production API/worker/Redis host, region and budget.

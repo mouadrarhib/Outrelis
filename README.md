@@ -7,8 +7,9 @@ organizing leads, and preparing personalized outreach.
 
 ## Current development
 
-The React + TypeScript + Vite starter is in `frontend/`. FastAPI has not been
-initialized, and the new Maps collector has not been implemented.
+The React + TypeScript + Vite starter is in `frontend/`. The FastAPI backend in
+`backend/` now supports PostgreSQL-backed email/password registration and session
+authentication. The new Maps collector has not been implemented.
 
 ```bash
 cd frontend
@@ -20,6 +21,19 @@ npm run dev
 npm run build
 npm run lint
 ```
+
+Start the API from a separate terminal:
+
+```bash
+cd backend
+source .venv/bin/activate
+alembic upgrade head
+fastapi dev app/main.py
+```
+
+See [backend setup and authentication](backend/README.md) for installation,
+endpoint details, and tests. Interactive API documentation runs at
+http://127.0.0.1:8000/docs.
 
 ## Direction
 
@@ -33,6 +47,7 @@ npm run lint
 ## Repository
 
 - `frontend/` — active React starter.
+- `backend/` — FastAPI, PostgreSQL access, account authentication, and migrations.
 - `docs/` — product overview, release plans, stack, and design reference.
 - `founder/` — business research and planning.
 - `docs/archive/` — original requirements and historical Python prototype.
