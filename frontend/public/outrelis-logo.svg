@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="135" viewBox="0 0 600 135" role="img" aria-label="Outrelis Open Ground logo">
+  <g color="#FAF8F2" fill="currentColor">
+    <g transform="translate(0 20) scale(0.86)">
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" d="M24 8H62V28H30V70H72V46H92V76Q92 92 76 92H24Q8 92 8 76V24Q8 8 24 8Z"/>
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" d="M72 8H92V28H72Z"/>
+    </g>
+    <g transform="translate(110 14) scale(1.55)" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" transform="translate(0 0)" d="M48 34 C48 15 40 4 26 4 C12 4 4 15 4 34 C4 53 12 64 26 64 C40 64 48 53 48 34"/>
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" transform="translate(55 0)" d="M4 23 V47 Q4 63 18 63 Q33 63 33 47 V23 M33 47 V63"/>
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" transform="translate(98 0)" d="M12 8 V49 Q12 63 26 61 M2 24 H29"/>
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" transform="translate(135 0)" d="M5 63 V24 M5 38 Q10 21 28 25"/>
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" transform="translate(171 0)" d="M4 43 H36 Q37 23 21 23 Q4 23 4 43 Q4 63 23 63 Q31 63 36 58"/>
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" transform="translate(217 0)" d="M6 4 V51 Q6 63 17 62"/>
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" transform="translate(244 0)" d="M7 25 V63"/>
+      <circle xmlns:xlink="http://www.w3.org/1999/xlink" cx="251" cy="10" r="4" fill="currentColor" stroke="none"/>
+      <path xmlns:xlink="http://www.w3.org/1999/xlink" transform="translate(267 0)" d="M32 28 Q25 21 15 24 Q2 28 7 37 Q10 42 21 44 Q36 47 31 57 Q27 67 7 60"/>
+    </g>
+  </g>
+</svg>

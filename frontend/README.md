@@ -1,32 +1,74 @@
-# React + TypeScript + Vite
+# Outrelis frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite authentication interface, adapted from the supplied
+`Outrelis-Authentication-Experience/` reference. It uses the same sage/paper/tomato
+palette, local Instrument Serif / DM Sans fonts, wordmark, and discovery diagram.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Start the FastAPI backend first (see `../backend/README.md`), then:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open http://localhost:5173. The default API base URL is
+`http://127.0.0.1:8000/api/v1`. Copy `.env.example` to `.env.local` to override
+`VITE_API_BASE_URL`; only public configuration belongs in Vite environment files.
+
+## Routes
+
+- `/login`: email/password sign-in.
+- `/register`: full name, email and password; success returns to login.
+- `/forgot-password`: honest availability notice, not a simulated reset request.
+- `/account`: authenticated account confirmation with server-backed sign-out.
+
+There is no product dashboard yet. Registration requires a 1–100 character trimmed
+name and a 15–128 character password. The prototype's 8-character rule and simulated
+outcomes have been replaced by the actual FastAPI contract.
+
+## Structure
+
+- `src/components/layout/`: shared split layout and reference SVG diagram.
+- `src/components/ui/`: shared SVG icons.
+- `src/features/auth/components/`: auth forms and account confirmation.
+- `src/features/auth/api/`: typed backend requests.
+- `src/features/auth/AuthProvider.tsx`: user identity, expiry and session lifecycle.
+- `src/lib/http.ts`: Axios instance and in-memory bearer token handling.
+- `public/fonts/`: self-hosted fonts and their original licenses.
+
+Axios calls FastAPI directly. Tokens and passwords are never written to
+localStorage/sessionStorage. Refreshing the page signs the browser out locally;
+the server session still expires normally. A persistent login requires a separate
+cookie/CSRF design. Sign-out revokes the current session through the backend.
+
+SPA hosting must serve `index.html` for application routes. Backend CORS origins
+must match the frontend origin. Password recovery, mailbox OAuth, and persistent
+browser login are not implemented.
+
+## Checks
+
+```bash
+npm run build
+npm run lint
+npm run test:e2e
+```
+
+Playwright uses system Google Chrome on this machine. On another machine, install
+Chromium with `npx playwright install chromium`, or set
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to your Chrome executable.
+
+Default tests mock API responses and cover form contracts, accessibility behavior,
+network errors, throttling, session handling, and responsive layouts at nine widths.
+Screenshots are saved under ignored `test-results/screenshots/`.
+
+For an opt-in real backend test, start local FastAPI on port 8000 and run:
+
+```bash
+LIVE_API=1 npm run test:e2e
+```
+
+This creates a randomly named local test account, exercises registration/login/me/
+logout, verifies revocation, and deletes only that account afterward using the
+backend's local environment. Do not run the live test against production.
