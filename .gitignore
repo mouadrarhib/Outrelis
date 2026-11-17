@@ -10,6 +10,7 @@ client_secret*.json
 token.json
 
 # Python environments and bytecode
+.ven/
 .venv/
 venv/
 env/
