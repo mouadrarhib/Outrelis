@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router'
 import { useAuth } from '../useAuth'
 import { authError } from '../auth.errors'
+import { FeedbackAlert } from '../../../components/ui/FeedbackAlert'
 import { Icon } from '../../../components/ui/Icon'
 
 export function AccountPage() {
@@ -19,7 +20,7 @@ export function AccountPage() {
     <h1 id="account-title">You’re signed in.</h1>
     <p className="intro">Welcome{user.full_name ? `, ${user.full_name}` : ' back'}.</p>
     <dl className="account-details"><dt>Email address</dt><dd>{user.email}</dd></dl>
-    {message && <p className="summary" role="alert">{message}</p>}
+    <FeedbackAlert open={Boolean(message)} tone="error" title="Sign-out failed" message={message} />
     <button className="primary" type="button" onClick={signOut} disabled={busy}><span>{busy ? 'Signing out…' : 'Sign out'}</span><Icon name="arrow" /></button>
   </section>
 }

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { parseApiError } from './api-error'
 
 // Kept in module memory only. Never persist passwords or tokens in browser storage.
 let accessToken: string | null = null
@@ -15,9 +16,11 @@ http.interceptors.request.use((config) => {
 })
 
 http.interceptors.response.use((response) => response, (error: unknown) => {
-  if (axios.isAxiosError(error) && error.response?.status === 401 && accessToken) {
+  if (axios.isCancel(error)) return Promise.reject(error)
+  const apiError = parseApiError(error)
+  if (apiError.status === 401 && accessToken) {
     accessToken = null
     window.dispatchEvent(new Event('outrelis:session-expired'))
   }
-  return Promise.reject(error)
+  return Promise.reject(apiError)
 })
