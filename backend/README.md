@@ -28,6 +28,45 @@ Direct project dependencies are declared in `pyproject.toml`.
 | GET | `/api/v1/auth/me` | Return the authenticated user |
 | POST | `/api/v1/auth/logout` | Revoke the current session (204) |
 
+## Onboarding API
+
+Both onboarding endpoints require the bearer token returned by login.
+
+| Method | Path | Behavior |
+|---|---|---|
+| GET | `/api/v1/onboarding` | Read the authenticated user's onboarding state |
+| PUT | `/api/v1/onboarding/starting-path` | Save or change the authenticated user's starting path |
+
+The write endpoint accepts one of the two supported paths:
+
+```json
+{
+  "starting_path": "find_first_leads"
+}
+```
+
+The other accepted value is `grow_pipeline`. Repeating the request updates the
+same user-owned record. The user ID always comes from the authenticated session;
+the client cannot select or modify another user's onboarding record.
+
+## Error responses
+
+Expected application failures use typed exceptions handled in one global place.
+Responses retain the standard `detail` field and also include a stable,
+machine-readable `code`, for example:
+
+```json
+{
+  "detail": "An account with this email already exists",
+  "code": "email_already_registered"
+}
+```
+
+The shared cases cover bad requests, authentication, forbidden access, missing
+resources, conflicts, and rate limits. Validation errors use `validation_error`
+and omit submitted values. Unexpected application and database failures are
+logged server-side and return a generic message without exposing internals.
+
 Registration accepts JSON:
 
 ```json
@@ -45,7 +84,7 @@ responses include `full_name`. Accounts created before the name migration keep
 `null` until a future profile update; existing accounts and sessions are preserved.
 
 Emails are trimmed and lowercased; passwords are preserved exactly. New passwords
-must contain 15–128 characters. Passwords use Argon2id hashes, and validation
+must contain 8–128 characters. Passwords use Argon2id hashes, and validation
 responses omit submitted values. Registration does not automatically log in.
 Duplicate registration returns 409; incorrect login and unknown email return the
 same 401 response.
@@ -95,8 +134,8 @@ Do not commit `.env`.
 `app/db.py` provides a SQLAlchemy engine and a request-scoped session dependency.
 Database writes must explicitly commit; closing a session does not commit changes.
 No tables are created automatically at application startup. Run `alembic upgrade
-head` to create `users`, `auth_sessions`, `auth_rate_limits`, and Alembic's version
-table. This migration history applies to `outrelis_db`, not the archived
+head` to create `users`, `auth_sessions`, `auth_rate_limits`, `user_onboarding`,
+and Alembic's version table. This migration history applies to `outrelis_db`, not the archived
 `leadmap_db` schema. Never apply the new history to the legacy database.
 
 ## Tests
