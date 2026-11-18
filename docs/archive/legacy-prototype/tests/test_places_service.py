@@ -9,7 +9,7 @@ def test_maps_google_place_payload() -> None:
             "websiteUri": "https://clinic.ma",
             "rating": 4.5,
         },
-        "Casablanca",
+        "Austin, TX",
         "Dentists",
     )
     assert mapped["place_id"] == "abc"

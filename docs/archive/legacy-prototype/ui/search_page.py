@@ -26,7 +26,7 @@ def render(session: Session) -> None:
         )
         location = location_col.text_input(
             "City or area",
-            placeholder="e.g. Casablanca or Maarif",
+            placeholder="e.g. Austin or Downtown Austin",
             help="Enter a city, district, or neighborhood.",
         )
 

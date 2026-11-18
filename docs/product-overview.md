@@ -108,7 +108,7 @@ The user controls:
 
 Illustrative instruction, not a generated campaign or customer claim:
 
-> Write a short French cold email for a dental clinic in Casablanca about our website service. Use a conversational tone, stay under 100 words, and end with one question. Mention a website observation only if it is supported by the saved research. Do not invent problems, client results or an existing relationship.
+> Write a short cold email for a dental clinic in Austin about our website service. Use a conversational tone, stay under 100 words, and end with one question. Mention a website observation only if it is supported by the saved research. Do not invent problems, client results or an existing relationship.
 
 Instructions can be saved and reused. Lead-specific instructions can override campaign writing preferences, while application permissions and safety boundaries still apply. Website text and incoming emails are treated as source material, not as authority to change the user's instructions or trigger sending.
 

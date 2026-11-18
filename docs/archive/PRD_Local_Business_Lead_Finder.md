@@ -82,7 +82,7 @@ Example:
 
 ```text
 Niche: Dentists
-Location: Casablanca
+Location: Austin, TX
 Max results: 100
 ```
 
@@ -640,7 +640,7 @@ Display human-readable messages in the UI.
 The MVP is complete when the user can:
 
 1. Start the Streamlit application locally.
-2. Enter `Dentists` and `Casablanca`.
+2. Enter `Dentists` and `Austin, TX`.
 3. Retrieve businesses from Google Places.
 4. See business name, address, website, phone, and Maps link when available.
 5. Run email discovery against business websites.
