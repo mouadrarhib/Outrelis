@@ -49,6 +49,32 @@ The other accepted value is `grow_pipeline`. Repeating the request updates the
 same user-owned record. The user ID always comes from the authenticated session;
 the client cannot select or modify another user's onboarding record.
 
+## Prospecting setup API
+
+Both endpoints require authentication and always operate on the current user.
+
+| Method | Path | Behavior |
+|---|---|---|
+| GET | `/api/v1/prospecting/setup` | Load the user's current offer and search draft |
+| PUT | `/api/v1/prospecting/setup` | Create or replace the current prospecting setup atomically |
+
+The write endpoint accepts 1–10 unique locations. Repeating it updates the same
+default offer and current draft instead of creating duplicates.
+
+```json
+{
+  "service_name": "Website design",
+  "outreach_language": "en-US",
+  "business_category": "Dental clinics",
+  "locations": ["New York, NY", "Austin, TX"],
+  "result_limit_per_location": 20
+}
+```
+
+`result_limit_per_location` may be `null` or an integer from 1 through 100.
+Whitespace is normalized before storage, duplicate locations are rejected
+case-insensitively, and location order is preserved.
+
 ## Error responses
 
 Expected application failures use typed exceptions handled in one global place.
@@ -134,8 +160,9 @@ Do not commit `.env`.
 `app/db.py` provides a SQLAlchemy engine and a request-scoped session dependency.
 Database writes must explicitly commit; closing a session does not commit changes.
 No tables are created automatically at application startup. Run `alembic upgrade
-head` to create `users`, `auth_sessions`, `auth_rate_limits`, `user_onboarding`,
-and Alembic's version table. This migration history applies to `outrelis_db`, not the archived
+head` to create the authentication tables, `user_onboarding`, `offer_profiles`,
+`search_drafts`, `search_draft_locations`, and Alembic's version table. This
+migration history applies to `outrelis_db`, not the archived
 `leadmap_db` schema. Never apply the new history to the legacy database.
 
 ## Tests
