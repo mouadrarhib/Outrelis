@@ -75,6 +75,38 @@ default offer and current draft instead of creating duplicates.
 Whitespace is normalized before storage, duplicate locations are rejected
 case-insensitively, and location order is preserved.
 
+## Lead discovery API
+
+Lead discovery is split between the FastAPI process and a separate PostgreSQL-backed
+worker. API requests only queue work; they never wait for Nominatim or Overpass.
+
+| Method | Path | Behavior |
+|---|---|---|
+| POST | `/api/v1/search-jobs` | Queue a search from an owned search draft |
+| GET | `/api/v1/search-jobs/{job_id}` | Read job and per-location progress |
+| GET | `/api/v1/search-jobs/{job_id}/leads` | Read paginated, deduplicated results |
+
+Queue a search with:
+
+```json
+{
+  "search_draft_id": "YOUR_SEARCH_DRAFT_UUID"
+}
+```
+
+Run one API process and one worker process in separate terminals:
+
+```bash
+fastapi dev app/main.py
+python -m app.features.discovery.worker
+```
+
+The worker checks the location cache, resolves cache misses through Nominatim,
+queries Overpass, normalizes businesses, deduplicates by provider identity, domain,
+phone, and business similarity, and records source provenance. Configure a real,
+contactable `OSM_USER_AGENT` before using the public services. Tests inject fake
+providers and never make network requests.
+
 ## Error responses
 
 Expected application failures use typed exceptions handled in one global place.
@@ -161,7 +193,9 @@ Do not commit `.env`.
 Database writes must explicitly commit; closing a session does not commit changes.
 No tables are created automatically at application startup. Run `alembic upgrade
 head` to create the authentication tables, `user_onboarding`, `offer_profiles`,
-`search_drafts`, `search_draft_locations`, and Alembic's version table. This
+`search_drafts`, `search_draft_locations`, `search_jobs`, `search_job_locations`,
+`geocoded_locations`, `businesses`, `business_sources`, `search_job_leads`, and
+Alembic's version table. This
 migration history applies to `outrelis_db`, not the archived
 `leadmap_db` schema. Never apply the new history to the legacy database.
 

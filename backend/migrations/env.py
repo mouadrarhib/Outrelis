@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, pool
 from app.config import get_settings
 from app.db import Base
 from app.features.auth import models  # noqa: F401
+from app.features.discovery import models as discovery_models  # noqa: F401
 from app.features.onboarding import models as onboarding_models  # noqa: F401
 from app.features.prospecting import models as prospecting_models  # noqa: F401
 

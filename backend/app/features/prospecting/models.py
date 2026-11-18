@@ -76,6 +76,7 @@ class SearchDraft(Base):
             "result_limit_per_location IS NULL OR result_limit_per_location > 0",
             name="ck_search_drafts_positive_result_limit",
         ),
+        UniqueConstraint("id", "user_id", name="uq_search_drafts_id_user_id"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
