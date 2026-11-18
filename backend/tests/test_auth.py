@@ -2,9 +2,9 @@ import hashlib
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from fastapi import HTTPException
 from sqlalchemy import func, select
 
+from app.exceptions import RateLimitError
 from app.features.auth.models import AuthRateLimit, AuthSession, User
 from app.features.auth.service import password_hasher
 
@@ -39,14 +39,16 @@ def test_registration_normalizes_email_and_hashes_password(client, db):
 
 def test_duplicate_email_cannot_replace_existing_password(client, db):
     assert register(client).status_code == 201
-    assert register(client, email="OWNER@EXAMPLE.COM", password="another long password").status_code == 409
+    duplicate = register(client, email="OWNER@EXAMPLE.COM", password="another long password")
+    assert duplicate.status_code == 409
+    assert duplicate.json()["code"] == "email_already_registered"
     assert db.scalar(select(func.count()).select_from(User)) == 1
     assert login(client).status_code == 200
 
 
 @pytest.mark.parametrize("override", [
     {"email": "not-an-email"},
-    {"password": "short"},
+    {"password": "1234567"},
     {"password": "x" * 129},
     {"is_active": True},
     {"full_name": ""},
@@ -57,6 +59,7 @@ def test_duplicate_email_cannot_replace_existing_password(client, db):
 def test_invalid_registration_does_not_echo_input_or_create_user(client, db, override):
     response = register(client, **override)
     assert response.status_code == 422
+    assert response.json()["code"] == "validation_error"
     assert all("input" not in error for error in response.json()["detail"])
     assert ACCOUNT["password"] not in response.text
     assert db.scalar(select(func.count()).select_from(User)) == 0
@@ -84,6 +87,11 @@ def test_full_name_required_for_registration_but_not_login(client):
     assert login(client).json()["user"]["full_name"] == "مُعاذ"
 
 
+def test_registration_accepts_an_eight_character_password(client):
+    assert register(client, password="12345678").status_code == 201
+    assert login(client, password="12345678").status_code == 200
+
+
 def test_existing_account_without_name_can_still_login(client, db):
     register(client)
     user = db.scalar(select(User))
@@ -100,6 +108,7 @@ def test_wrong_password_and_unknown_account_have_same_error(client):
     missing = login(client, email="missing@example.com")
     assert wrong.status_code == missing.status_code == 401
     assert wrong.json() == missing.json()
+    assert wrong.json()["code"] == "invalid_credentials"
     assert wrong.headers["www-authenticate"] == "Bearer"
 
 
@@ -156,7 +165,7 @@ def test_login_throttle_is_persisted_and_returns_retry_after(client, db, monkeyp
             return frozen
 
     monkeypatch.setattr(service, "datetime", FrozenDatetime)
-    with pytest.raises(HTTPException) as result:
+    with pytest.raises(RateLimitError) as result:
         service.enforce_rate_limit(db, "login-email", ACCOUNT["email"], 0)
     assert result.value.status_code == 429
     limit = db.scalar(select(AuthRateLimit))
@@ -164,6 +173,7 @@ def test_login_throttle_is_persisted_and_returns_retry_after(client, db, monkeyp
     db.commit()
     response = login(client)
     assert response.status_code == 429
+    assert response.json()["code"] == "rate_limited"
     assert int(response.headers["retry-after"]) > 0
 
 

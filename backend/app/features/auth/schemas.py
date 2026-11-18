@@ -19,7 +19,7 @@ class LoginRequest(BaseModel):
 
 class RegisterRequest(LoginRequest):
     full_name: str = Field(min_length=1, max_length=100)
-    password: SecretStr = Field(min_length=15, max_length=128)
+    password: SecretStr = Field(min_length=8, max_length=128)
 
     @field_validator("full_name", mode="before")
     @classmethod

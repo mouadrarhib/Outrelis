@@ -3,12 +3,12 @@ import re
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from fastapi import HTTPException
 from pwdlib import PasswordHash
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.exceptions import ConflictError, RateLimitError, UnauthorizedError
 from app.features.auth import repository
 from app.features.auth.models import AuthSession, User
 from app.features.auth.schemas import LoginRequest, RegisterRequest
@@ -17,8 +17,11 @@ password_hasher = PasswordHash.recommended()
 dummy_hash = password_hasher.hash(secrets.token_urlsafe(32))
 
 
-def unauthorized() -> HTTPException:
-    return HTTPException(401, "Invalid or expired credentials", headers={"WWW-Authenticate": "Bearer"})
+def unauthorized() -> UnauthorizedError:
+    return UnauthorizedError(
+        "Invalid or expired credentials",
+        code="invalid_credentials",
+    )
 
 
 def enforce_rate_limit(db: Session, category: str, identity: str, maximum: int) -> None:
@@ -27,9 +30,9 @@ def enforce_rate_limit(db: Session, category: str, identity: str, maximum: int) 
     key = hashlib.sha256(f"{category}:{identity}:{window}".encode()).hexdigest()
     expiry = datetime.fromtimestamp((window + 1) * 60, UTC)
     if repository.increment_rate_limit(db, key, expiry) > maximum:
-        raise HTTPException(429, "Too many attempts. Try again shortly.", headers={
-            "Retry-After": str(max(1, int((expiry - now).total_seconds()) + 1)),
-        })
+        raise RateLimitError(
+            retry_after=max(1, int((expiry - now).total_seconds()) + 1),
+        )
 
 
 def register(db: Session, data: RegisterRequest) -> User:
@@ -44,7 +47,10 @@ def register(db: Session, data: RegisterRequest) -> User:
     except IntegrityError:
         db.rollback()
         if repository.find_user_by_email(db, str(data.email)):
-            raise HTTPException(409, "An account with this email already exists") from None
+            raise ConflictError(
+                "An account with this email already exists",
+                code="email_already_registered",
+            ) from None
         raise
     db.refresh(user)
     return user
