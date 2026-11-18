@@ -18,6 +18,9 @@ test('real FastAPI registration, profile and session revocation', async ({ page,
     const loginResponse = page.waitForResponse((response) => response.url() === 'http://127.0.0.1:8000/api/v1/auth/login')
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
     token = (await (await loginResponse).json()).access_token
+    await expect(page.getByRole('heading', { name: 'What would you like to do first?' })).toBeVisible()
+    await page.getByRole('radio', { name: 'Find my first leads' }).click()
+    await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByRole('heading', { name: 'You’re signed in.' })).toBeVisible()
     await expect(page.getByText(email, { exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Sign out' }).click()

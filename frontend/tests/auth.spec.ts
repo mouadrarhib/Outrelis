@@ -5,11 +5,22 @@ const response = { access_token: 'test-token', token_type: 'bearer', expires_in:
 
 test('register, login, protected account and server logout', async ({ page }) => {
   let registerBody: unknown
+  let startingPathBody: unknown
   let bearer = ''
   let revoked = false
-  await page.route('**/api/v1/auth/**', async (route) => {
+  await page.route('**/api/v1/**', async (route) => {
     const request = route.request()
-    const endpoint = new URL(request.url()).pathname.split('/').at(-1)
+    const pathname = new URL(request.url()).pathname
+    const endpoint = pathname.split('/').at(-1)
+    if (pathname === '/api/v1/onboarding') {
+      await route.fulfill({ status: 200, json: { starting_path: null, completed: false, completed_at: null, updated_at: null } })
+      return
+    }
+    if (pathname === '/api/v1/onboarding/starting-path') {
+      startingPathBody = request.postDataJSON()
+      await route.fulfill({ status: 200, json: { starting_path: 'find_first_leads', completed: true, completed_at: '2026-11-18T00:00:00Z', updated_at: '2026-11-18T00:00:00Z' } })
+      return
+    }
     if (endpoint === 'register') registerBody = request.postDataJSON()
     if (endpoint === 'me') bearer = request.headers()['authorization'] || ''
     if (endpoint === 'logout') revoked = true
@@ -27,11 +38,16 @@ test('register, login, protected account and server logout', async ({ page }) =>
   await page.getByRole('button', { name: 'Hide password' }).click()
   await page.getByRole('button', { name: 'Create account', exact: true }).click()
   await expect(page.getByText('Your account is ready.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Welcome back.' })).toBeInViewport()
   expect(registerBody).toEqual({ full_name: profile.full_name, email: profile.email, password: 'a long private passphrase' })
   await expect(page.getByLabel('Password', { exact: true })).toHaveValue('')
   await page.getByLabel('Password', { exact: true }).fill('a long private passphrase')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'What would you like to do first?' })).toBeVisible()
+  await page.getByRole('radio', { name: 'Find my first leads' }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByRole('heading', { name: 'You’re signed in.' })).toBeVisible()
+  expect(startingPathBody).toEqual({ starting_path: 'find_first_leads' })
   expect(bearer).toBe('Bearer test-token')
   expect(await page.evaluate(() => ({ local: Object.keys(localStorage), session: Object.keys(sessionStorage) }))).toEqual({ local: [], session: [] })
   await page.getByRole('button', { name: 'Sign out' }).click()
@@ -51,9 +67,9 @@ test('validation matches API, preserves non-secret fields and supports keyboard 
   await expect(page.getByText('Enter your name.')).toBeVisible()
   await page.getByLabel('Full name').fill('مُعاذ')
   await page.getByLabel('Email address').fill(profile.email)
-  await page.getByLabel('Password', { exact: true }).fill('short')
+  await page.getByLabel('Password', { exact: true }).fill('1234567')
   await page.getByRole('button', { name: 'Create account', exact: true }).click()
-  await expect(page.getByText('Use at least 15 characters.')).toBeVisible()
+  await expect(page.getByText('Use at least 8 characters.')).toBeVisible()
   expect(requests).toBe(0)
   await page.getByRole('link', { name: 'Sign in', exact: true }).click()
   await expect(page.getByLabel('Email address')).toHaveValue(profile.email)
@@ -70,8 +86,8 @@ test('loading, invalid credentials, throttling and connection recovery', async (
     attempt++
     if (attempt === 1) {
       await new Promise((resolve) => setTimeout(resolve, 250))
-      await route.fulfill({ status: 401, json: { detail: 'Invalid or expired credentials' } })
-    } else if (attempt === 2) await route.fulfill({ status: 429, headers: { 'Retry-After': '30' }, json: {} })
+      await route.fulfill({ status: 401, json: { detail: 'Invalid or expired credentials', code: 'invalid_credentials' } })
+    } else if (attempt === 2) await route.fulfill({ status: 429, headers: { 'Retry-After': '30' }, json: { detail: 'Try later', code: 'rate_limited' } })
     else await route.abort('connectionfailed')
   })
   await page.goto('/login')
@@ -79,7 +95,7 @@ test('loading, invalid credentials, throttling and connection recovery', async (
   await page.getByLabel('Password', { exact: true }).fill('a long private passphrase')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Signing in…' })).toBeDisabled()
-  await expect(page.getByRole('alert')).toHaveText('Email or password is incorrect.')
+  await expect(page.getByRole('alert')).toContainText('Email or password is incorrect.')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('Too many attempts.')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
@@ -92,8 +108,8 @@ test('registration conflict and server validation are visible', async ({ page })
   let attempts = 0
   await page.route('**/api/v1/auth/register', async (route) => {
     attempts++
-    await route.fulfill(attempts === 1 ? { status: 409, json: {} } : {
-      status: 422, json: { detail: [{ loc: ['body', 'email'], msg: 'Invalid email', type: 'value_error' }] },
+    await route.fulfill(attempts === 1 ? { status: 409, json: { code: 'email_already_registered' } } : {
+      status: 422, json: { code: 'validation_error', detail: [{ loc: ['body', 'email'], msg: 'Invalid email', type: 'value_error' }] },
     })
   })
   await page.goto('/register')
@@ -105,6 +121,32 @@ test('registration conflict and server validation are visible', async ({ page })
   await page.getByRole('button', { name: 'Create account', exact: true }).click()
   await expect(page.getByLabel('Email address')).toHaveAttribute('aria-invalid', 'true')
   await expect(page.getByText('Enter a valid email address.', { exact: true })).toBeVisible()
+})
+
+test('shared API errors provide safe recovery messages', async ({ page }) => {
+  const failures = [
+    { status: 403, code: 'forbidden', message: 'You don’t have access' },
+    { status: 404, code: 'not_found', message: 'We couldn’t find what you requested' },
+    { status: 500, code: 'database_error', message: 'We couldn’t complete your request' },
+    { status: 500, code: 'internal_error', message: 'We couldn’t complete your request' },
+  ]
+  let attempt = 0
+  await page.route('**/api/v1/auth/login', async (route) => {
+    const failure = failures[attempt++]
+    await route.fulfill({
+      status: failure.status,
+      json: { detail: 'Private server detail', code: failure.code },
+    })
+  })
+  await page.goto('/login')
+  await page.getByLabel('Email address').fill(profile.email)
+  await page.getByLabel('Password', { exact: true }).fill('a long private passphrase')
+
+  for (const failure of failures) {
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page.getByRole('alert')).toContainText(failure.message)
+    await expect(page.getByRole('alert')).not.toContainText('Private server detail')
+  }
 })
 
 test('responsive reference layouts load local assets without overflow', async ({ page }) => {

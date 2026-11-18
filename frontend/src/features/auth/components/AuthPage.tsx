@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import axios from 'axios'
 import gsap from 'gsap'
+import { FeedbackAlert } from '../../../components/ui/FeedbackAlert'
 import { Icon } from '../../../components/ui/Icon'
 import { useAuth } from '../useAuth'
 import { registerAccount } from '../api/auth.api'
@@ -45,14 +46,14 @@ function AuthForm({ mode }: { mode: Mode }) {
     return () => { controller.current?.abort(); media.revert() }
   }, [registration, recovery, location.state])
 
-  if (user) return <Navigate to="/account" replace />
+  if (user) return <Navigate to="/getting-started" replace />
 
   function validate(field: FieldName, value: string) {
     const length = Array.from(value).length
     if (field === 'full_name') return !value.trim() ? 'Enter your name.' : Array.from(value.trim()).length > 100 ? 'Use no more than 100 characters.' : ''
     if (field === 'email') return !value.trim() ? 'Enter your email address.' : value.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? 'Enter a valid email address, such as you@example.com.' : ''
     if (!length) return 'Enter your password.'
-    if (registration && length < 15) return 'Use at least 15 characters.'
+    if (registration && length < 8) return 'Use at least 8 characters.'
     return length > 128 ? 'Use no more than 128 characters.' : ''
   }
 
@@ -82,7 +83,7 @@ function AuthForm({ mode }: { mode: Mode }) {
         if (!signal.aborted) navigate('/login', { replace: true, state: { email: credentials.email, registered: true, focus: true } })
       } else {
         await login(credentials, signal)
-        if (!signal.aborted) navigate('/account', { replace: true })
+        if (!signal.aborted) navigate('/getting-started', { replace: true })
       }
     } catch (error) {
       if (signal.aborted || axios.isCancel(error)) return
@@ -122,14 +123,26 @@ function AuthForm({ mode }: { mode: Mode }) {
     <h1 id={`${mode}-title`} tabIndex={-1}>{heading}</h1>
     <p className="intro">{registration ? 'Start with a little about yourself.' : recovery ? 'Password recovery is coming soon.' : 'Your next opportunity is waiting.'}</p>
     {recovery ? <p className="helper recovery-note">Password recovery isn’t available yet. Return to sign in to try your password again.</p> : <>
-      {location.state?.registered && <div className="notice success-notice" role="status"><strong>Your account is ready.</strong><p>Sign in to continue.</p></div>}
+      <div className="feedback-slot success-notice">
+        <FeedbackAlert
+          open={Boolean(location.state?.registered)}
+          tone="success"
+          title="Your account is ready."
+          message="Sign in to continue."
+        />
+      </div>
       <form className="auth-form" onSubmit={submit} noValidate aria-busy={busy}>
         {registration && input('full_name', 'Full name')}
         {input('email', 'Email address')}
         {input('password', 'Password')}
-        {registration && <p className="requirements" id="password-requirements">Use 15–128 characters. A longer passphrase works well.</p>}
+        {registration && <p className="requirements" id="password-requirements">Use 8–128 characters. A longer passphrase works well.</p>}
         {!registration && <div className="forgot-row"><Link className="text-link" to="/forgot-password" state={linkState}>Forgot password?</Link></div>}
-        {message && <div className="summary" role="alert">{message}</div>}
+        <FeedbackAlert
+          open={Boolean(message)}
+          tone="error"
+          title={registration ? 'Account not created' : 'Sign-in failed'}
+          message={message}
+        />
         <button type="submit" className="primary" disabled={busy}><span>{busy ? (registration ? 'Creating account…' : 'Signing in…') : registration ? 'Create account' : 'Sign in'}</span><Icon name="arrow" /></button>
       </form>
       <p className="switch">{registration ? 'Already have an account?' : 'New to Outrelis?'} <Link className="text-link" to={registration ? '/login' : '/register'} state={linkState}>{registration ? 'Sign in' : 'Create an account'}</Link></p>

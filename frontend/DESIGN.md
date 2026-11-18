@@ -1,7 +1,7 @@
 # Outrelis authentication design
 
-Visual authority: the user-supplied `../Outrelis-Authentication-Experience/index.html`,
-`styles.css`, and local assets. This is a React port of that direction, not a redesign.
+Visual authority: the implemented React authentication interface and its local
+assets. Preserve this direction while extending the authenticated product.
 Surface mode: Operate (create an account or sign in).
 
 | Token | Value |
@@ -28,7 +28,18 @@ recoverable API errors. Disable submissions while pending. All reduced-motion
 views stay fully visible. Match backend password rules; never show simulated
 account creation or password-reset success. Do not invent product statistics.
 
+Inline success and error feedback uses the source-owned beUI Animated Alert,
+adapted to the existing 4px controls and sage/paper/tomato palette. Error copy
+names the failed action and gives a recovery step; backend error codes drive the
+message while internal server details remain hidden.
+
 The desktop discovery SVG plays a one-shot GSAP story: pin arrives, a single halo
 settles, the dashed route is revealed through an SVG mask, and the saved check
 draws in. The sequence lasts about 2.6 seconds and plays once without looping.
 Mobile and reduced-motion views keep static art.
+
+The authenticated starting-path stage leaves the split authentication frame and
+uses a single centered decision surface. Two beUI radio rows share one bordered
+list rather than separate cards. The page keeps the established palette, type,
+focus treatment and 52px primary action, with the logo and sign-out action in a
+quiet product header.
