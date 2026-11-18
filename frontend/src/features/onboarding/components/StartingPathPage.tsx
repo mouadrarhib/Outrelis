@@ -34,7 +34,7 @@ export function StartingPathPage() {
     getOnboardingState(request.signal).then((state) => {
       if (request.signal.aborted) return
       if (state.completed) {
-        navigate('/account', { replace: true })
+        navigate('/prospecting/setup', { replace: true })
         return
       }
       setChoice(state.starting_path ?? '')
@@ -59,7 +59,7 @@ export function StartingPathPage() {
     controller.current = request
     try {
       await saveStartingPath(choice, request.signal)
-      if (!request.signal.aborted) navigate('/account', { replace: true })
+      if (!request.signal.aborted) navigate('/prospecting/setup', { replace: true })
     } catch (error) {
       if (request.signal.aborted || axios.isCancel(error)) return
       setMessage(apiErrorMessage(parseApiError(error)))

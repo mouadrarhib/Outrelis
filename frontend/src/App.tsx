@@ -4,6 +4,7 @@ import { AuthProvider } from './features/auth/AuthProvider'
 import { AuthPage } from './features/auth/components/AuthPage'
 import { AccountPage } from './features/auth/components/AccountPage'
 import { StartingPathPage } from './features/onboarding/components/StartingPathPage'
+import { ProspectingSetupPage } from './features/prospecting/components/ProspectingSetupPage'
 import './App.css'
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
       <Route path="/account" element={<AccountPage />} />
     </Route>
     <Route path="/getting-started" element={<StartingPathPage />} />
+    <Route path="/prospecting/setup" element={<ProspectingSetupPage />} />
     <Route path="*" element={<Navigate to="/login" replace />} />
   </Routes></AuthProvider></BrowserRouter>
 }
